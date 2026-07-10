@@ -3,6 +3,7 @@ class Run {
     required this.id,
     required this.runNumber,
     this.durationMs,
+    this.completedAt,
     this.isPending = false,
   });
 
@@ -10,12 +11,15 @@ class Run {
   final int runNumber;
   /// Elapsed time in milliseconds. Null while pending / unsaved.
   final int? durationMs;
+  /// Timestamp when the run was completed. Null while pending / unsaved.
+  final DateTime? completedAt;
   final bool isPending;
 
   Run copyWith({
     String? id,
     int? runNumber,
     int? durationMs,
+    DateTime? completedAt,
     bool? isPending,
     bool clearDuration = false,
   }) {
@@ -23,6 +27,7 @@ class Run {
       id: id ?? this.id,
       runNumber: runNumber ?? this.runNumber,
       durationMs: clearDuration ? null : (durationMs ?? this.durationMs),
+      completedAt: clearDuration ? null : (completedAt ?? this.completedAt),
       isPending: isPending ?? this.isPending,
     );
   }
@@ -31,6 +36,7 @@ class Run {
         'id': id,
         'runNumber': runNumber,
         'durationMs': durationMs,
+        'completedAt': completedAt?.toIso8601String(),
         'isPending': isPending,
       };
 
@@ -39,6 +45,9 @@ class Run {
       id: json['id'] as String,
       runNumber: json['runNumber'] as int,
       durationMs: json['durationMs'] as int?,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'] as String)
+          : null,
       isPending: json['isPending'] as bool? ?? false,
     );
   }
@@ -49,9 +58,10 @@ class Run {
         other.id == id &&
         other.runNumber == runNumber &&
         other.durationMs == durationMs &&
+        other.completedAt == completedAt &&
         other.isPending == isPending;
   }
 
   @override
-  int get hashCode => Object.hash(id, runNumber, durationMs, isPending);
+  int get hashCode => Object.hash(id, runNumber, durationMs, completedAt, isPending);
 }

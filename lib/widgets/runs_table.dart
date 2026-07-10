@@ -56,6 +56,7 @@ class RunsTable extends StatelessWidget {
             columnWidths: const {
               0: FlexColumnWidth(1),
               1: FlexColumnWidth(2),
+              2: FlexColumnWidth(2.5),
             },
             children: [
               TableRow(
@@ -74,6 +75,13 @@ class RunsTable extends StatelessWidget {
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      'Date / Time',
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                  ),
                 ],
               ),
               ...runs.map((run) {
@@ -81,6 +89,9 @@ class RunsTable extends StatelessWidget {
                 final timeText = isPending
                     ? 'Tap to time…'
                     : formatDurationMs(run.durationMs);
+                final dateTimeText = isPending || run.completedAt == null
+                    ? ''
+                    : _formatDateTime(run.completedAt!);
                 return TableRow(
                   children: [
                     TableRowInkWell(
@@ -116,6 +127,23 @@ class RunsTable extends StatelessWidget {
                         ),
                       ),
                     ),
+                    TableRowInkWell(
+                      onTap: isPending ? onPendingTap : null,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Text(
+                          dateTimeText,
+                          style: TextStyle(
+                            fontStyle:
+                                isPending ? FontStyle.italic : FontStyle.normal,
+                            color: isPending
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 );
               }),
@@ -123,5 +151,14 @@ class RunsTable extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final month = dt.month.toString().padLeft(2, '0');
+    final day = dt.day.toString().padLeft(2, '0');
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final second = dt.second.toString().padLeft(2, '0');
+    return '${dt.year}-$month-$day $hour:$minute:$second';
   }
 }
