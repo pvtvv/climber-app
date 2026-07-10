@@ -85,7 +85,7 @@ class _TimerDialogState extends State<TimerDialog> {
             if (_phase != _TimerPhase.stopped) ...[
               SizedBox(
                 width: double.infinity,
-                height: startLarge ? 108 : 60,
+                height: startLarge ? 162 : 90,
                 child: FilledButton(
                   onPressed: _phase == _TimerPhase.idle ? _onStart : null,
                   child: Text(
@@ -99,7 +99,7 @@ class _TimerDialogState extends State<TimerDialog> {
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                height: stopLarge ? 108 : 60,
+                height: stopLarge ? 162 : 90,
                 child: FilledButton.tonal(
                   onPressed: _phase == _TimerPhase.running ? _onStop : null,
                   child: Text(
