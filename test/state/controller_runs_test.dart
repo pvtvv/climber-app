@@ -39,6 +39,7 @@ void main() {
     final run = controller.athletes.single.runs.single;
     expect(run.isPending, isFalse);
     expect(run.durationMs, 12345);
+    expect(run.completedAt, isNotNull);
     expect(run.runNumber, 1);
     expect(controller.hasPending(athleteId()), isFalse);
   });

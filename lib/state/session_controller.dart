@@ -142,6 +142,7 @@ class SessionController extends ChangeNotifier {
     final pending = updated[pendingIndex];
     updated[pendingIndex] = pending.copyWith(
       durationMs: durationMs,
+      completedAt: DateTime.now(),
       isPending: false,
     );
     _replaceAthlete(athlete.copyWith(runs: updated));

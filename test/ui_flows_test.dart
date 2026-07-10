@@ -62,6 +62,9 @@ void main() {
   });
 
   testWidgets('runs table shows run#/time and sort reorders', (tester) async {
+    final dt1 = DateTime(2026, 7, 10, 10, 30, 0);
+    final dt2 = DateTime(2026, 7, 10, 10, 35, 0);
+    
     final controller = await _controllerWith(
       Session(
         athletes: [
@@ -69,9 +72,9 @@ void main() {
             id: 'a1',
             name: 'Dana',
             colorIndex: 0,
-            runs: const [
-              Run(id: 'r1', runNumber: 1, durationMs: 30000),
-              Run(id: 'r2', runNumber: 2, durationMs: 10000),
+            runs: [
+              Run(id: 'r1', runNumber: 1, durationMs: 30000, completedAt: dt1),
+              Run(id: 'r2', runNumber: 2, durationMs: 10000, completedAt: dt2),
             ],
           ),
         ],
@@ -178,9 +181,12 @@ void main() {
     await c2.load();
     expect(c2.athletes.single.name, 'Gina');
     expect(c2.athletes.single.runs.single.durationMs, 22200);
+    expect(c2.athletes.single.runs.single.completedAt, isNotNull);
   });
 
   testWidgets('new session cancel clears without requiring export', (tester) async {
+    final dt = DateTime(2026, 7, 10, 10, 30, 0);
+    
     final controller = await _controllerWith(
       Session(
         athletes: [
@@ -188,7 +194,7 @@ void main() {
             id: 'a1',
             name: 'Hank',
             colorIndex: 0,
-            runs: const [Run(id: 'r1', runNumber: 1, durationMs: 5000)],
+            runs: [Run(id: 'r1', runNumber: 1, durationMs: 5000, completedAt: dt)],
           ),
         ],
       ),
@@ -198,7 +204,6 @@ void main() {
 
     await tester.tap(find.byTooltip('New session'));
     await tester.pumpAndSettle();
-    // Dialog has Cancel (clear only) as TextButton
     await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
     await tester.pumpAndSettle();
 

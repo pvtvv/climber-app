@@ -21,14 +21,16 @@ void main() {
 
   test('empty → save → load restores athletes and runs', () async {
     final store = SessionStore();
+    final dt = DateTime(2026, 7, 10, 10, 30, 15);
+    
     final original = Session(
       athletes: [
         Athlete(
           id: 'a1',
           name: 'Alice',
           colorIndex: 2,
-          runs: const [
-            Run(id: 'r1', runNumber: 1, durationMs: 9999),
+          runs: [
+            Run(id: 'r1', runNumber: 1, durationMs: 9999, completedAt: dt),
           ],
         ),
         const Athlete(id: 'a2', name: 'Bob', colorIndex: 3),
@@ -42,6 +44,7 @@ void main() {
     expect(loaded.athletes[0].name, 'Alice');
     expect(loaded.athletes[0].colorIndex, 2);
     expect(loaded.athletes[0].runs.single.durationMs, 9999);
+    expect(loaded.athletes[0].runs.single.completedAt, dt);
     expect(loaded.athletes[1].name, 'Bob');
     expect(loaded, original);
   });
