@@ -22,6 +22,15 @@ Future<SessionController> _controllerWith(Session session) async {
   return controller;
 }
 
+/// Enters Session mode from ModePicker when the Session tile is present.
+Future<void> _enterSession(WidgetTester tester) async {
+  final sessionTile = find.text('Session');
+  if (sessionTile.evaluate().isNotEmpty) {
+    await tester.tap(sessionTile);
+    await tester.pumpAndSettle();
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -34,6 +43,7 @@ void main() {
     await controller.load();
     await tester.pumpWidget(ClimberApp(controller: controller));
     await tester.pumpAndSettle();
+    await _enterSession(tester);
 
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
@@ -53,6 +63,7 @@ void main() {
     final controller = await _controllerWith(Session(athletes: athletes));
     await tester.pumpWidget(ClimberApp(controller: controller));
     await tester.pumpAndSettle();
+    await _enterSession(tester);
 
     expect(controller.canAddAthlete, isFalse);
     final fab = tester.widget<FloatingActionButton>(
@@ -82,6 +93,7 @@ void main() {
     );
     await tester.pumpWidget(ClimberApp(controller: controller));
     await tester.pumpAndSettle();
+    await _enterSession(tester);
 
     await tester.tap(find.text('Dana'));
     await tester.pumpAndSettle();
@@ -107,6 +119,7 @@ void main() {
     );
     await tester.pumpWidget(ClimberApp(controller: controller));
     await tester.pumpAndSettle();
+    await _enterSession(tester);
     await tester.tap(find.text('Eve'));
     await tester.pumpAndSettle();
 
@@ -201,6 +214,7 @@ void main() {
     );
     await tester.pumpWidget(ClimberApp(controller: controller));
     await tester.pumpAndSettle();
+    await _enterSession(tester);
 
     await tester.tap(find.byTooltip('New session'));
     await tester.pumpAndSettle();

@@ -4,6 +4,15 @@ import 'package:climber_app/main.dart';
 import 'package:climber_app/state/session_controller.dart';
 import 'package:climber_app/services/session_store.dart';
 
+/// Enters Session mode from ModePicker when the Session tile is present.
+Future<void> _enterSession(WidgetTester tester) async {
+  final sessionTile = find.text('Session');
+  if (sessionTile.evaluate().isNotEmpty) {
+    await tester.tap(sessionTile);
+    await tester.pumpAndSettle();
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -14,6 +23,7 @@ void main() {
 
     await tester.pumpWidget(ClimberApp(controller: controller));
     await tester.pumpAndSettle();
+    await _enterSession(tester);
 
     expect(find.textContaining('No athletes yet'), findsOneWidget);
     expect(find.text('Climber Speed Timer'), findsOneWidget);
@@ -30,6 +40,7 @@ void main() {
 
     await tester.pumpWidget(ClimberApp(controller: controller));
     await tester.pumpAndSettle();
+    await _enterSession(tester);
 
     expect(find.text('Alice'), findsOneWidget);
     expect(find.textContaining('No athletes yet'), findsNothing);

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:climber_app/screens/home_screen.dart';
+import 'package:climber_app/screens/mode_picker.dart';
 import 'package:climber_app/state/session_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final controller = SessionController();
-  await controller.load();
   runApp(ClimberApp(controller: controller));
 }
 
@@ -26,7 +25,7 @@ class ClimberApp extends StatelessWidget {
         useMaterial3: true,
         appBarTheme: const AppBarTheme(centerTitle: false),
       ),
-      home: HomeScreen(controller: controller),
+      home: ModePicker(controller: controller),
     );
   }
 }
