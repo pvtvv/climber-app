@@ -1,0 +1,20 @@
+# Constructor Studio artifacts registry
+
+[[systems]]
+name = "ClimberApp"
+slug = "climberapp"
+kit = "sdlc"
+codebase = []
+children = []
+
+[[systems.artifacts]]
+kind = "FEATURE"
+name = "Session Timer"
+slug = "session-timer"
+path = "docs/sdlc/FEATURE/climberapp-session-timer.md"
+
+[[systems.artifacts]]
+kind = "FEATURE"
+name = "Measurement Mode Entry"
+slug = "measurement-mode-entry"
+path = "docs/sdlc/FEATURE/climberapp-measurement-mode-entry.md"

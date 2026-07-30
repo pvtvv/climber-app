@@ -12,12 +12,16 @@ class AthleteTile extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.controller,
+    this.timingInProgress,
+    this.onLeaveWhileRunning,
   });
 
   final Athlete athlete;
   final bool expanded;
   final VoidCallback onToggle;
   final SessionController controller;
+  final ValueNotifier<bool>? timingInProgress;
+  final Future<void> Function()? onLeaveWhileRunning;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +61,11 @@ class AthleteTile extends StatelessWidget {
                 onAddPending: () => controller.addPendingRun(athlete.id),
                 onSortByTime: () => controller.sortByTime(athlete.id),
                 onPendingTap: () async {
-                  final ms = await showTimerDialog(context);
+                  final ms = await showTimerDialog(
+                    context,
+                    timingInProgress: timingInProgress,
+                    onLeaveWhileRunning: onLeaveWhileRunning,
+                  );
                   if (ms == null) {
                     await controller.discardPending(athlete.id);
                   } else {
