@@ -1,5 +1,6 @@
 # Feature: Start-Stop Layout Design
 
+> **SUPERSEDED**: This FEATURE's premise — porting `TimerDialog`'s dual always-visible Start/Stop buttons to `QuickMeasureScreen` — was never implemented and has been superseded by a single-toggling-button design for both surfaces. See `openspec/changes/single-toggle-timer-control/` (or its archived spec at `openspec/specs/timer-toggle-control/spec.md`, once archived). The content below is retained for historical context only and should not be used to guide implementation.
 
 <!-- toc -->
 
@@ -59,6 +60,7 @@ The current `QuickMeasureScreen` layout diverges from `TimerDialog` at five poin
   - **Depends on** `climberapp-measurement-mode-entry` FEATURE for: Quick phase SM (`cpt-climberapp-state-measurement-mode-entry-quick-phase`), auto-persist-on-stop (`cpt-climberapp-dod-measurement-mode-entry-persist-on-stop`), retake-overwrites (`cpt-climberapp-dod-measurement-mode-entry-retake`), AppBar + leave guard (`cpt-climberapp-dod-measurement-mode-entry-back-nav`, `cpt-climberapp-dod-measurement-mode-entry-confirm-leave-running`), and full-screen surface (`cpt-climberapp-dod-measurement-mode-entry-quick-full-screen`). This FEATURE does not redefine those behaviors; it specifies only how controls are sized, typed, and arranged.
   - **Depends on** `climberapp-session-timer` FEATURE for the `TimerDialog` control column as the layout template.
 - **Used by**: `climberapp-measurement-mode-entry` — control-column parity specifics for `QuickMeasureScreen` are now owned here; `cpt-climberapp-dod-measurement-mode-entry-quick-full-screen` in that FEATURE defers detailed layout DoDs to this document.
+- **Interaction states**: The `timer-controls-interaction` OpenSpec capability (`openspec/specs/timer-controls-interaction/spec.md` once archived; currently `openspec/changes/tap-to-time-interaction-states/`) governs hover, press, disabled-tap, and keyboard-focus behavior for these controls and applies equally to `QuickMeasureScreen`'s dual-button layout once implemented: inherit Material 3 defaults only, no custom interaction affordances. This FEATURE's Sections 2-5 remain the authoritative source for heights, gaps, button types, and typography; the interaction-state spec is additive and does not change them. The Result phase's Retake button (Section 5, "Result Phase Layout") must also follow this contract; unlike `TimerDialog`'s Save/Cancel, Retake has no green/red exception since Quick mode's auto-persist model has no Cancel action.
 
 ## 2. Actor Flows (CDSL)
 

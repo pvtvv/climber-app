@@ -5,9 +5,11 @@ import 'package:climber_app/models/quick_result.dart';
 import 'package:climber_app/models/time_format.dart';
 import 'package:climber_app/services/quick_store.dart';
 import 'package:climber_app/services/timer_engine.dart';
+import 'package:climber_app/widgets/copyable_run_time.dart';
 import 'package:climber_app/widgets/leave_confirm.dart';
+import 'package:climber_app/widgets/timer_toggle_button.dart';
 
-enum QuickPhase { idle, running, result }
+enum QuickPhase { idle, running }
 
 /// Full-screen Quick measure surface.
 /// @cpt-flow:cpt-climberapp-flow-measurement-mode-entry-enter-quick:p1
@@ -30,7 +32,6 @@ class _QuickMeasureScreenState extends State<QuickMeasureScreen> {
   late final TimerEngine _engine;
   QuickPhase _phase = QuickPhase.idle;
   int _displayMs = 0;
-  QuickResult? _cachedResult;
   StreamSubscription<int>? _tickSub;
 
   @override
@@ -56,13 +57,10 @@ class _QuickMeasureScreenState extends State<QuickMeasureScreen> {
     if (cached != null) {
       if (_phase != QuickPhase.idle) {
         // User already started a run while the async load was in flight;
-        // preserve the cached reference but never override the active phase.
-        _cachedResult = cached;
+        // never override the active phase.
         return;
       }
       setState(() {
-        _cachedResult = cached;
-        _phase = QuickPhase.result;
         _displayMs = cached.durationMs;
       });
     }
@@ -92,9 +90,8 @@ class _QuickMeasureScreenState extends State<QuickMeasureScreen> {
     // The in-memory result is already shown even if save fails (F-003).
     if (!mounted) return;
     setState(() {
-      _phase = QuickPhase.result;
+      _phase = QuickPhase.idle;
       _displayMs = ms;
-      _cachedResult = result;
     });
     try {
       await _store.save(result);
@@ -127,38 +124,37 @@ class _QuickMeasureScreenState extends State<QuickMeasureScreen> {
           leading: BackButton(onPressed: _handleBack),
           title: const Text('Quick'),
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                formatDurationMs(_displayMs),
-                key: const Key('quick_elapsed'),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.displayMedium,
-              ),
-              if (_phase == QuickPhase.result && _cachedResult != null)
-                Text(
-                  key: const Key('quick_result_label'),
-                  'Result saved',
-                  textAlign: TextAlign.center,
-                ),
-              const Spacer(),
-              if (_phase != QuickPhase.running)
-                FilledButton(
-                  key: const Key('quick_start'),
-                  onPressed: _onStart,
-                  child: Text(_phase == QuickPhase.result ? 'Retake' : 'Start'),
-                ),
-              if (_phase == QuickPhase.running) ...[
-                FilledButton.tonal(
-                  key: const Key('quick_stop'),
-                  onPressed: _onStop,
-                  child: const Text('Stop'),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_phase == QuickPhase.running)
+                  Text(
+                    formatDurationMs(_displayMs),
+                    key: const Key('quick_elapsed'),
+                    textAlign: TextAlign.center,
+                    style: elapsedClockTextStyle(context),
+                  )
+                else
+                  CopyableRunTime(
+                    key: const Key('quick_elapsed'),
+                    display: formatDurationMs(_displayMs),
+                    textAlign: TextAlign.center,
+                    style: elapsedClockTextStyle(context),
+                  ),
+                const SizedBox(height: 24),
+                TimerToggleButton(
+                  key: _phase == QuickPhase.running
+                      ? const Key('quick_stop')
+                      : const Key('quick_start'),
+                  isRunning: _phase == QuickPhase.running,
+                  onStart: _onStart,
+                  onStop: _onStop,
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),
