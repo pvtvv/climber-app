@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:climber_app/models/time_format.dart';
 import 'package:climber_app/services/timer_engine.dart';
+import 'package:climber_app/widgets/copyable_run_time.dart';
 import 'package:climber_app/widgets/leave_confirm.dart';
+import 'package:climber_app/widgets/timer_toggle_button.dart';
 
 /// Timer overlay: Start → Stop → Save / Cancel.
 /// @cpt-algo:cpt-climberapp-algo-measurement-mode-entry-timer-engine:p2
@@ -100,8 +102,6 @@ class _TimerDialogState extends State<TimerDialog> {
   Widget build(BuildContext context) {
     final phase = _engine.phase;
     final display = formatDurationMs(_displayMs);
-    final startLarge = phase == TimerPhase.idle;
-    final stopLarge = phase == TimerPhase.running;
 
     return PopScope(
       canPop: phase != TimerPhase.running,
@@ -116,41 +116,22 @@ class _TimerDialogState extends State<TimerDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                display,
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
+              if (phase == TimerPhase.stopped)
+                CopyableRunTime(
+                  display: display,
+                  style: elapsedClockTextStyle(context),
+                )
+              else
+                Text(
+                  display,
+                  style: elapsedClockTextStyle(context),
+                ),
               const SizedBox(height: 24),
               if (phase != TimerPhase.stopped) ...[
-                SizedBox(
-                  width: double.infinity,
-                  height: startLarge ? 162 : 90,
-                  child: FilledButton(
-                    onPressed: phase == TimerPhase.idle ? _onStart : null,
-                    child: Text(
-                      'Start',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            fontSize: 21,
-                          ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  height: stopLarge ? 162 : 90,
-                  child: FilledButton.tonal(
-                    onPressed: phase == TimerPhase.running ? _onStop : null,
-                    child: Text(
-                      'Stop',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            fontSize: 21,
-                          ),
-                    ),
-                  ),
+                TimerToggleButton(
+                  isRunning: phase == TimerPhase.running,
+                  onStart: _onStart,
+                  onStop: _onStop,
                 ),
               ] else ...[
                 SizedBox(

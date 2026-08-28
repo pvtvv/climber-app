@@ -11,8 +11,8 @@
 - [2. Actor Flows (CDSL)](#2-actor-flows-cdsl)
   - [Launch to ModePicker](#launch-to-modepicker)
   - [Enter Quick Mode](#enter-quick-mode)
-  - [Quick: Start → Stop → Result](#quick-start--stop--result)
-  - [Quick: Retake / Overwrite](#quick-retake--overwrite)
+  - [Quick: Start → Stop → Auto-Save](#quick-start--stop--auto-save)
+  - [Quick: Start Again Overwrites](#quick-start-again-overwrites)
   - [Enter Session Mode](#enter-session-mode)
   - [Leave Mode to ModePicker (AppBar Back)](#leave-mode-to-modepicker-appbar-back)
   - [Leave While Running (Confirm Discard)](#leave-while-running-confirm-discard)
@@ -33,7 +33,7 @@
   - [Isolated Storage Keys](#isolated-storage-keys)
   - [QuickMeasureScreen Full-Screen Surface](#quickmeasurescreen-full-screen-surface)
   - [Persist Quick Result Immediately on Stop](#persist-quick-result-immediately-on-stop)
-  - [Quick Retake Overwrites Cached Result](#quick-retake-overwrites-cached-result)
+  - [Starting Again Overwrites Cached Result](#starting-again-overwrites-cached-result)
   - [AppBar and System Back Navigation](#appbar-and-system-back-navigation)
   - [Confirm Leave While Running](#confirm-leave-while-running)
   - [Session Feature Parity](#session-feature-parity)
@@ -51,7 +51,7 @@
 
 Measurement Mode Entry adds a **ModePicker** home screen to Climber Speed Timer, giving the operator two peer measurement modes:
 
-- **Quick** — one timer, one cached result; Start → Stop shows the result and persists it immediately; Retake overwrites.
+- **Quick** — one timer, one cached result; Start → Stop persists the result immediately and the same button returns to reading "Start" (no distinct result screen); tapping Start again overwrites the cached result on the next Stop.
 - **Session** — the existing multi-athlete roster/run/CSV flow. In-mode behavior (athlete roster, TimerDialog Save/Cancel, run persistence, CSV export) is unchanged. The only additive changes are the AppBar back arrow to ModePicker and the leave-while-running confirmation guard. Note: `climber_session_v1` hydration is moved from app start to the first Session entry by this feature's lazy-load architecture (see `cpt-climberapp-algo-measurement-mode-entry-lazy-load-session-store`); this supersedes the resume-on-launch load timing defined in `climberapp-session-timer` while leaving all in-mode behavior intact.
 
 ModePicker is the `MaterialApp` home and is always shown on launch. Each mode's storage is isolated: entering one mode never reads or clears the other mode's persisted data. A shared timer engine (phases + tick) is extracted from the current `TimerDialog` implementation so both surfaces can reuse it without duplicating timing logic.
@@ -112,7 +112,7 @@ User-facing interactions that start with the timer operator and describe the end
 
 **Success Scenarios**:
 
-- Operator taps Quick on ModePicker; QuickMeasureScreen opens full-screen showing any previously cached result (or an idle state if none exists).
+- Operator taps Quick on ModePicker; QuickMeasureScreen opens full-screen in the Idle state, showing any previously cached duration on the clock (or 00:00.00 if none exists); the button always reads "Start".
 
 **Steps**:
 
@@ -120,14 +120,14 @@ User-facing interactions that start with the timer operator and describe the end
 2. [x] - `p1` - Algorithm: load Quick result store using `cpt-climberapp-algo-measurement-mode-entry-load-quick-store` - `inst-enter-quick-load-store`
 3. [x] - `p1` - System pushes QuickMeasureScreen onto the navigator as a full-screen route with an AppBar back arrow pointing to ModePicker - `inst-enter-quick-push-screen`
 4. [x] - `p1` - **IF** a cached Quick result exists in `climber_quick_v1` - `inst-enter-quick-if-cached`
-  1. [x] - `p1` - System displays the cached result in the Result state - `inst-enter-quick-show-cached`
+  1. [x] - `p1` - System displays the cached duration on the clock while QuickMeasureScreen remains in the Idle state (button reads "Start") - `inst-enter-quick-show-cached`
 5. [x] - `p1` - **ELSE** - `inst-enter-quick-else`
-  1. [x] - `p1` - System displays QuickMeasureScreen in the Idle state - `inst-enter-quick-show-idle`
-6. [x] - `p1` - **RETURN** QuickMeasureScreen shown in the appropriate phase - `inst-enter-quick-return`
+  1. [x] - `p1` - System displays QuickMeasureScreen in the Idle state with the clock at `00:00.00` - `inst-enter-quick-show-idle`
+6. [x] - `p1` - **RETURN** QuickMeasureScreen shown in the Idle state - `inst-enter-quick-return`
 
 
 
-### Quick: Start → Stop → Result
+### Quick: Start → Stop → Auto-Save
 
 - [x] `p1` - **ID**: `cpt-climberapp-flow-measurement-mode-entry-quick-start-stop-result`
 
@@ -135,17 +135,17 @@ User-facing interactions that start with the timer operator and describe the end
 
 **Success Scenarios**:
 
-- Operator taps Start on QuickMeasureScreen; timer runs; operator taps Stop; result is displayed immediately and written to `climber_quick_v1` without any Save/Cancel step.
+- Operator taps Start on QuickMeasureScreen; timer runs; operator taps Stop; the duration is written to `climber_quick_v1` immediately, without any Save/Cancel step, and the same button immediately reads "Start" again.
 
 **Steps**:
 
 1. [x] - `p1` - Operator is on QuickMeasureScreen in Idle state; taps **Start** - `inst-quick-tap-start`
 2. [x] - `p1` - Shared timer engine (via `cpt-climberapp-algo-measurement-mode-entry-timer-engine`) transitions to Running; elapsed display begins updating at the fixed tick interval - `inst-quick-running`
 3. [x] - `p1` - Operator taps **Stop** - `inst-quick-tap-stop`
-4. [x] - `p1` - Shared timer engine transitions to Result; elapsed display freezes at the captured duration - `inst-quick-freeze-elapsed`
+4. [x] - `p1` - Shared timer engine transitions back to Idle; elapsed display freezes at the captured duration - `inst-quick-freeze-elapsed`
 5. [x] - `p1` - Algorithm: persist Quick result on stop using `cpt-climberapp-algo-measurement-mode-entry-persist-quick-result` - `inst-quick-persist`
-6. [x] - `p1` - System displays the result on QuickMeasureScreen with a **Start** (Retake) button; no Save/Cancel controls are shown - `inst-quick-show-result`
-7. [x] - `p1` - **RETURN** result visible and persisted in `climber_quick_v1` - `inst-quick-return-result`
+6. [x] - `p1` - System displays the frozen duration on QuickMeasureScreen with the same button already reading **Start**; no separate result screen or Retake label, and no Save/Cancel controls are shown - `inst-quick-show-result`
+7. [x] - `p1` - **RETURN** frozen duration visible and persisted in `climber_quick_v1`; screen is in Idle, ready for the next run - `inst-quick-return-result`
 
 ```mermaid
 sequenceDiagram
@@ -161,12 +161,12 @@ sequenceDiagram
     QuickMeasureScreen->>TimerEngine: stop()
     TimerEngine-->>QuickMeasureScreen: frozen durationMs
     QuickMeasureScreen->>QuickStore: persistResult(durationMs)
-    QuickMeasureScreen-->>Operator: Result displayed + Retake button
+    QuickMeasureScreen-->>Operator: duration frozen; button reads Start again
 ```
 
 *Diagram rationale*: this flow spans three collaborating units (`QuickMeasureScreen`, `TimerEngine`, `QuickStore`) and involves a persist side-effect on stop; a sequence diagram is warranted to make the boundary clear.
 
-### Quick: Retake / Overwrite
+### Quick: Start Again Overwrites
 
 - [x] `p1` - **ID**: `cpt-climberapp-flow-measurement-mode-entry-quick-retake`
 
@@ -174,14 +174,14 @@ sequenceDiagram
 
 **Success Scenarios**:
 
-- Operator taps Start / Retake while a previous result is displayed; a new timing run begins and, when stopped, overwrites the previously cached result.
+- Operator taps Start again while a previous duration is displayed; a new timing run begins and, when stopped, overwrites the previously cached result.
 
 **Steps**:
 
-1. [x] - `p1` - Operator is on QuickMeasureScreen in Result state; taps **Start** (Retake) - `inst-retake-tap`
-2. [x] - `p1` - System transitions QuickMeasureScreen to Idle, then immediately to Running — no confirmation is required - `inst-retake-idle-to-running`
+1. [x] - `p1` - Operator is on QuickMeasureScreen in Idle state with a previous duration displayed; taps **Start** - `inst-retake-tap`
+2. [x] - `p1` - System transitions QuickMeasureScreen from Idle to Running — no confirmation is required - `inst-retake-idle-to-running`
 3. [x] - `p1` - Follow steps 2–7 of `cpt-climberapp-flow-measurement-mode-entry-quick-start-stop-result`; the persist step overwrites the previously stored result in `climber_quick_v1` - `inst-retake-overwrite`
-4. [x] - `p1` - **RETURN** new result displayed; prior result is no longer accessible - `inst-retake-return`
+4. [x] - `p1` - **RETURN** new duration displayed; prior result is no longer accessible - `inst-retake-return`
 
 
 
@@ -223,7 +223,7 @@ sequenceDiagram
 1. [x] - `p1` - Operator taps the AppBar back arrow from QuickMeasureScreen or Session HomeScreen - `inst-leave-tap-back`
 2. [x] - `p1` - **IF** the timer engine is in Running state - `inst-leave-if-running`
   1. [x] - `p1` - Redirect to `cpt-climberapp-flow-measurement-mode-entry-leave-while-running` - `inst-leave-redirect-confirm`
-3. [x] - `p1` - **ELSE** (Idle or Result state in Quick; Idle or Stopped in Session) - `inst-leave-else`
+3. [x] - `p1` - **ELSE** (Idle in Quick; Idle or Stopped in Session) - `inst-leave-else`
   1. [x] - `p1` - System pops the current route; ModePicker becomes the active screen - `inst-leave-pop-to-picker`
   2. [x] - `p1` - The departed mode's in-memory store is retained (not unloaded or cleared) - `inst-leave-retain-store`
   3. [x] - `p1` - **RETURN** ModePicker displayed - `inst-leave-return-picker`
@@ -312,10 +312,10 @@ Note: no stored "last mode" preference is read; ModePicker is unconditionally sh
 
 1. [x] - `p1` - Read the value stored under key `climber_quick_v1` from browser local storage - `inst-load-quick-read`
 2. [x] - `p1` - **IF** no value exists or the value fails to parse - `inst-load-quick-if-missing`
-  1. [x] - `p1` - **RETURN** `null` (QuickMeasureScreen enters Idle state) - `inst-load-quick-return-null`
+  1. [x] - `p1` - **RETURN** `null` (QuickMeasureScreen enters Idle state with the clock at `00:00.00`) - `inst-load-quick-return-null`
 3. [x] - `p1` - **ELSE** - `inst-load-quick-else`
   1. [x] - `p1` - Decode the JSON record into a `QuickResult` - `inst-load-quick-decode`
-  2. [x] - `p1` - **RETURN** the decoded `QuickResult` (QuickMeasureScreen enters Result state) - `inst-load-quick-return-result`
+  2. [x] - `p1` - **RETURN** the decoded `QuickResult` (QuickMeasureScreen enters Idle state, showing the decoded duration on the clock) - `inst-load-quick-return-result`
 
 The `climber_session_v1` key is not read or touched during this algorithm (decision: `mode_storage_isolation`).
 
@@ -391,7 +391,7 @@ Session TimerDialog continues to pass `durationMs` through its existing `int?` r
 
 1. [x] - `p1` - **FROM** `ModePicker` **TO** `InQuick` **WHEN** operator taps the Quick tile - `inst-nav-picker-to-quick`
 2. [x] - `p1` - **FROM** `ModePicker` **TO** `InSession` **WHEN** operator taps the Session tile - `inst-nav-picker-to-session`
-3. [x] - `p1` - **FROM** `InQuick` **TO** `ModePicker` **WHEN** operator leaves Quick mode and the leave is confirmed (Idle or Result) or confirmed via discard (Running) - `inst-nav-quick-to-picker`
+3. [x] - `p1` - **FROM** `InQuick` **TO** `ModePicker` **WHEN** operator leaves Quick mode and the leave is confirmed (Idle) or confirmed via discard (Running) - `inst-nav-quick-to-picker`
 4. [x] - `p1` - **FROM** `InSession` **TO** `ModePicker` **WHEN** operator leaves Session mode and the leave is confirmed - `inst-nav-session-to-picker`
 
 ```mermaid
@@ -399,7 +399,7 @@ stateDiagram-v2
     [*] --> ModePicker: app launch (always)
     ModePicker --> InQuick: tap Quick
     ModePicker --> InSession: tap Session
-    InQuick --> ModePicker: back (Idle/Result) or confirm discard (Running)
+    InQuick --> ModePicker: back (Idle) or confirm discard (Running)
     InSession --> ModePicker: back (non-running) or confirm discard (Running)
 ```
 
@@ -409,28 +409,27 @@ stateDiagram-v2
 
 - [x] `p2` - **ID**: `cpt-climberapp-state-measurement-mode-entry-quick-phase`
 
-**States**: `Idle`, `Running`, `Result`
+**States**: `Idle`, `Running`
 
-**Initial State**: `Idle` (or `Result` if a cached `QuickResult` exists in `climber_quick_v1` when QuickMeasureScreen opens)
+**Initial State**: `Idle` in every case — with the clock at `00:00.00` if no cached `QuickResult` exists in `climber_quick_v1`, or showing the cached duration if one does. There is no distinct Result state: the single toggle button always reads "Start" whenever the phase is `Idle`, whether or not a duration is currently displayed. (See `timer-toggle-control` in `openspec/changes/single-toggle-timer-control/`, which supersedes the earlier Result/Retake phase model recorded below.)
 
 **Transitions**:
 
-1. [x] - `p1` - **FROM** `Idle` **TO** `Running` **WHEN** operator taps Start - `inst-quick-phase-idle-to-running`
-2. [x] - `p1` - **FROM** `Running` **TO** `Result` **WHEN** operator taps Stop; result is persisted immediately as part of this transition - `inst-quick-phase-running-to-result`
-3. [x] - `p1` - **FROM** `Result` **TO** `Running` **WHEN** operator taps Start (Retake); no confirmation required - `inst-quick-phase-result-to-running`
-4. [x] - `p1` - **FROM** `Running` **TO** `ModePicker` **WHEN** operator confirms leave while running (discard); timer engine is halted without persisting - `inst-quick-phase-running-discard`
+1. [x] - `p1` - **FROM** `Idle` **TO** `Running` **WHEN** operator taps Start — this covers both a fresh run and starting again over a previously displayed duration (overwrite on the next Stop) - `inst-quick-phase-idle-to-running`
+2. [x] - `p1` - **FROM** `Running` **TO** `Idle` **WHEN** operator taps Stop; result is persisted immediately as part of this transition and the button reads "Start" again, with the clock frozen at the captured duration - `inst-quick-phase-running-to-result`
+3. [x] - `p1` - **FROM** `Running` **TO** `ModePicker` **WHEN** operator confirms leave while running (discard); timer engine is halted without persisting - `inst-quick-phase-running-discard`
 
-This phase state is scoped to one `QuickMeasureScreen` instance and is not persisted. On re-enter from ModePicker a new instance opens and initialises to `Idle` or `Result` based on `climber_quick_v1`.
+This phase state is scoped to one `QuickMeasureScreen` instance and is not persisted. On re-enter from ModePicker a new instance opens and initialises to `Idle`, with the clock seeded from `climber_quick_v1` if a cached result exists.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Idle: open (no cached result)
-    [*] --> Result: open (cached result exists)
+    [*] --> Idle: open (clock at 00:00.00 or showing cached result)
     Idle --> Running: tap Start
-    Running --> Result: tap Stop (persist durationMs)
-    Result --> Running: tap Start/Retake (overwrite)
+    Running --> Idle: tap Stop (persist durationMs; button reads Start again)
     Running --> [*]: confirm discard (leave while running)
 ```
+
+**Historical note**: transition 3 in the original implementation of this state machine (`inst-quick-phase-result-to-running`, `Result` → `Running` on tapping "Start (Retake)") is superseded rather than removed from history — it described the same operator action (tap Start to begin a new run over a previous result) under the old Result-phase model. That action is now transition 1 above, since `Result` is no longer a distinct phase.
 
 
 
@@ -514,6 +513,8 @@ The system **MUST** implement Quick mode as a dedicated full-screen `QuickMeasur
 - UI: `QuickMeasureScreen` widget (new) under `lib/screens/`
 - Route: pushed by `ModePicker` navigator; full-screen scaffold
 
+**Note on visual presentation**: within this full-screen surface (unaffected by the note below), `QuickMeasureScreen`'s clock and Start/Stop toggle button are implemented using the same shared components as `TimerDialog` (`elapsedClockTextStyle`, `TimerToggleButton` in `lib/widgets/timer_toggle_button.dart`) and are positioned vertically centered in the body, matching where `TimerDialog`'s dialog box visually sits — per the `timer-toggle-control` OpenSpec capability (`openspec/specs/timer-toggle-control/spec.md`, extended by `openspec/changes/quick-screen-visual-parity/`). This is a presentation detail only; it does not change the full-screen surface type required above. Whenever the clock shows a frozen duration in the Idle phase (a just-completed or previously cached result), the shared `CopyableRunTime` widget (`lib/widgets/copyable_run_time.dart`) additionally supports long-press-to-copy: a standard long-press copies the exact displayed value to the clipboard and shows a brief, self-dismissing confirmation; this is inactive while the clock is live-updating in the Running phase. See `openspec/specs/run-time-clipboard-copy/spec.md` (`openspec/changes/copy-run-time-to-clipboard/`).
+
 ### Persist Quick Result Immediately on Stop
 
 - [x] `p1` - **ID**: `cpt-climberapp-dod-measurement-mode-entry-persist-on-stop`
@@ -532,11 +533,11 @@ The system **MUST** write the captured `durationMs` and timestamp to `climber_qu
 - DB: Browser local storage key `climber_quick_v1`
 - Entities: `QuickResult`
 
-### Quick Retake Overwrites Cached Result
+### Starting Again Overwrites Cached Result
 
 - [x] `p1` - **ID**: `cpt-climberapp-dod-measurement-mode-entry-retake`
 
-The system **MUST** allow the operator to start a new timing run from the Result state by tapping Start (Retake). The new result **MUST** overwrite the previously cached `climber_quick_v1` value on Stop. No history list of past Quick results is kept.
+The system **MUST** allow the operator to start a new timing run by tapping the same Start/Stop toggle button (which reads "Start") while a previous duration is displayed in the Idle state — there is no distinct Result state or separate Retake control. The new result **MUST** overwrite the previously cached `climber_quick_v1` value on Stop. No history list of past Quick results is kept.
 
 **Implements**:
 
@@ -646,11 +647,11 @@ The system **MUST** load each mode's store only on the first enter into that mod
 - [x] ModePicker is displayed on every launch; no screen other than ModePicker appears before the operator makes a mode selection
 - [x] ModePicker tiles show the labels **Quick** and **Session** with the correct subtitle copy ("One timer. One result." / "Multiple athletes. Track runs.")
 - [x] Tapping Quick pushes a full-screen `QuickMeasureScreen` with an AppBar back arrow; tapping Session pushes the existing `HomeScreen` with an AppBar back arrow
-- [x] On QuickMeasureScreen with no cached result, the screen starts in Idle state (no result shown)
-- [x] On QuickMeasureScreen with a cached result, the screen opens in Result state displaying the cached result
-- [x] Start → Stop on QuickMeasureScreen shows the result without a Save/Cancel dialog and writes the result to `climber_quick_v1`
-- [x] Tapping Start (Retake) from the Result state begins a new timing run; the new result on Stop overwrites the previously cached value in `climber_quick_v1`; no history list is shown
-- [x] AppBar back from QuickMeasureScreen (Idle or Result) pops to ModePicker without clearing `climber_quick_v1`
+- [x] On QuickMeasureScreen with no cached result, the screen starts in Idle state with the clock at `00:00.00` and the button reading "Start"
+- [x] On QuickMeasureScreen with a cached result, the screen opens in Idle state displaying the cached duration on the clock, with the button still reading "Start" (no distinct Result state or Retake label)
+- [x] Start → Stop on QuickMeasureScreen writes the result to `climber_quick_v1` without a Save/Cancel dialog, and the same button immediately reads "Start" again
+- [x] Tapping Start again while a previous duration is displayed begins a new timing run; the new result on Stop overwrites the previously cached value in `climber_quick_v1`; no history list is shown
+- [x] AppBar back from QuickMeasureScreen (Idle) pops to ModePicker without clearing `climber_quick_v1`
 - [x] AppBar back from Session HomeScreen (non-running) pops to ModePicker without clearing `climber_session_v1`
 - [x] Browser/system back from either mode screen applies the same back policy as the AppBar back arrow
 - [x] Tapping AppBar back or pressing system back while the timer is Running shows a confirmation dialog; tapping **Leave** discards timing and navigates to ModePicker; tapping **Cancel** resumes timing

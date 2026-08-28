@@ -142,9 +142,9 @@ void main() {
 
     expect(find.text('00:00.00'), findsOneWidget);
     expect(find.text('Start'), findsOneWidget);
-    expect(find.text('Stop'), findsOneWidget);
+    expect(find.text('Stop'), findsNothing);
 
-    // Start button is large (height 162) while idle.
+    // The single toggle button is 162 tall while idle.
     final startBefore =
         tester.getSize(find.widgetWithText(FilledButton, 'Start'));
     expect(startBefore.height, 162);
@@ -153,6 +153,7 @@ void main() {
     // Advance fake time so periodic ticker fires once.
     await tester.pump(const Duration(milliseconds: 30));
 
+    expect(find.text('Start'), findsNothing);
     final stopSize = tester.getSize(find.widgetWithText(FilledButton, 'Stop'));
     expect(stopSize.height, 162);
 
